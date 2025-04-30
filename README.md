@@ -15,7 +15,7 @@ This web application computes and displays the shortest path between two user-se
 
 1. **Clone the repository**
    ```
-   clone git project (git clone (link will be here after i add))
+   clone git project (git clone https://github.com/Daprhoo/smart-route-navigator.git)
    cd smart-route-navigator
    ```
 
