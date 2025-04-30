@@ -1,0 +1,27 @@
+{
+    "nodes": ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"],
+    "edges": {
+      "A": [{"node": "B", "weight": 2}, {"node": "C", "weight": 4}, {"node": "D", "weight": 3}],
+      "B": [{"node": "A", "weight": 2}, {"node": "C", "weight": 1}, {"node": "E", "weight": 5}],
+      "C": [{"node": "A", "weight": 4}, {"node": "B", "weight": 1}, {"node": "D", "weight": 2}, {"node": "F", "weight": 4}],
+      "D": [{"node": "A", "weight": 3}, {"node": "C", "weight": 2}, {"node": "G", "weight": 6}],
+      "E": [{"node": "B", "weight": 5}, {"node": "F", "weight": 1}, {"node": "H", "weight": 4}],
+      "F": [{"node": "C", "weight": 4}, {"node": "E", "weight": 1}, {"node": "G", "weight": 2}, {"node": "I", "weight": 3}],
+      "G": [{"node": "D", "weight": 6}, {"node": "F", "weight": 2}, {"node": "J", "weight": 5}],
+      "H": [{"node": "E", "weight": 4}, {"node": "I", "weight": 2}],
+      "I": [{"node": "F", "weight": 3}, {"node": "H", "weight": 2}, {"node": "J", "weight": 1}],
+      "J": [{"node": "G", "weight": 5}, {"node": "I", "weight": 1}]
+    },
+    "coordinates": {
+      "A": [41.085, 29.05],
+      "B": [41.09, 29.03],
+      "C": [41.08, 29.03],
+      "D": [41.07, 29.05],
+      "E": [41.095, 29.01],
+      "F": [41.075, 29.01],
+      "G": [41.06, 29.03],
+      "H": [41.09, 28.99],
+      "I": [41.07, 28.99],
+      "J": [41.055, 29.01]
+    }
+  }

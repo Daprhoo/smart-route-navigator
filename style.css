@@ -1,0 +1,107 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: Arial, sans-serif;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+header {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+header h1 {
+    color: #333;
+    margin-bottom: 5px;
+}
+
+header p {
+    color: #666;
+}
+
+#map {
+    height: 600px;
+    width: 100%;
+    border-radius: 8px;
+    margin-top: 20px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.controls {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
+}
+
+.btn {
+    padding: 10px 15px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.3s ease;
+}
+
+.btn:hover {
+    opacity: 0.9;
+}
+
+.btn-primary {
+    background-color: #4CAF50;
+    color: white;
+}
+
+.btn-secondary {
+    background-color: #f44336;
+    color: white;
+}
+
+.info-panel {
+    background-color: #f9f9f9;
+    padding: 15px;
+    border-radius: 8px;
+    margin-top: 15px;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+}
+
+#statusMessage {
+    font-weight: bold;
+    margin-bottom: 10px;
+    color: #333;
+}
+
+#distanceInfo, #pathInfo {
+    margin-top: 10px;
+    color: #555;
+}
+
+.active {
+    background-color: #2196F3;
+    color: white;
+}
+
+.node-marker {
+    background-color: #3388ff;
+    border-radius: 50%;
+    border: 2px solid white;
+}
+
+.start-marker {
+    background-color: #4CAF50;
+    border-radius: 50%;
+    border: 2px solid white;
+}
+
+.end-marker {
+    background-color: #f44336;
+    border-radius: 50%;
+    border: 2px solid white;
+}
