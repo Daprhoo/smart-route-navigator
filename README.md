@@ -20,7 +20,7 @@ This web application computes and displays the shortest path between two user-se
    ```
 
 2. **Running the application**
-      1: Use a local server (I use Live Server extension by Ritwick Dey can be download on vscode extensions part)
+      1: Use a local server (I used Live Server extension by Ritwick Dey can be download on vscode extensions part)
    -  2: Open `index.html` directly in a modern web browser
 
      Then access the application at http://localhost:8000

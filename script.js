@@ -1,20 +1,21 @@
+// Global variables
 let map;
-let graphData;
-let markers = {};
+let markers = [];
 let polyline = null;
-let startNode = null;
-let endNode = null;
-let selectionMode = 'none'; 
+let startMarker = null;
+let endMarker = null;
+let routingControl = null;
+let selectionMode = 'none'; // 'start', 'end', or 'none'
 
+// Initialize the application when the page is loaded
 document.addEventListener('DOMContentLoaded', () => {
     initMap();
-    loadGraphData();
     setupEventListeners();
 });
 
 // Initialize the Leaflet map
 function initMap() {
-    // Create a map centered on Istanbul coordinates
+    // Create a map centered on Istanbul coordinates (approximate)
     map = L.map('map').setView([41.075, 29.02], 14);
 
     // Add the OpenStreetMap tile layer
@@ -22,73 +23,9 @@ function initMap() {
         attribution: '&copy; OpenStreetMap contributors',
         maxZoom: 18
     }).addTo(map);
-}
 
-// load the graph data from the JSON file
-function loadGraphData() {
-    fetch('graph-data.json')
-        .then(response => response.json())
-        .then(data => {
-            graphData = data;
-            createGraphOnMap();
-        })
-        .catch(error => {
-            console.error('Error loading graph data:', error);
-            updateStatus('Error loading graph data. Please try again.');
-        });
-}
-
-// Create the graph visualization on map
-function createGraphOnMap() {
-    // Add nodes to the map
-    Object.keys(graphData.coordinates).forEach(nodeId => {
-        const coords = graphData.coordinates[nodeId];
-        const marker = L.circleMarker(coords, {
-            radius: 8,
-            fillColor: '#3388ff',
-            color: '#fff',
-            weight: 2,
-            opacity: 1,
-            fillOpacity: 0.8,
-            className: 'node-marker'
-        }).addTo(map);
-        
-        marker.bindTooltip(nodeId, { permanent: false });
-        
-        markers[nodeId] = marker;
-        
-        marker.on('click', () => handleNodeClick(nodeId));
-    });
-    
-    Object.keys(graphData.edges).forEach(nodeId => {
-        const neighbors = graphData.edges[nodeId];
-        neighbors.forEach(neighbor => {
-            const sourceCoords = graphData.coordinates[nodeId];
-            const targetCoords = graphData.coordinates[neighbor.node];
-            
-            const line = L.polyline([sourceCoords, targetCoords], {
-                color: '#3388ff',
-                weight: 3,
-                opacity: 0.5
-            }).addTo(map);
-            
-            // Add weight as a tooltip
-            const midpoint = [
-                (sourceCoords[0] + targetCoords[0]) / 2,
-                (sourceCoords[1] + targetCoords[1]) / 2
-            ];
-            L.circleMarker(midpoint, {
-                radius: 0,
-                opacity: 0
-            }).bindTooltip(neighbor.weight.toString(), {
-                permanent: true,
-                direction: 'center',
-                className: 'weight-tooltip'
-            }).addTo(map);
-        });
-    });
-    
-    updateStatus('Graph loaded. Select a start point.');
+    // Add click event to the map
+    map.on('click', handleMapClick);
 }
 
 // Set up event listeners for the buttons
@@ -97,14 +34,14 @@ function setupEventListeners() {
         selectionMode = 'start';
         resetButtonStates();
         document.getElementById('startBtn').classList.add('active');
-        updateStatus('Click on a node to set as the start point.');
+        updateStatus('Click on the map to set your start point.');
     });
     
     document.getElementById('endBtn').addEventListener('click', () => {
         selectionMode = 'end';
         resetButtonStates();
         document.getElementById('endBtn').classList.add('active');
-        updateStatus('Click on a node to set as the end point.');
+        updateStatus('Click on the map to set your end point.');
     });
     
     document.getElementById('findPathBtn').addEventListener('click', findShortestPath);
@@ -118,130 +55,136 @@ function resetButtonStates() {
     });
 }
 
-// Handle node click based on the current selection mode
-function handleNodeClick(nodeId) {
+// Handle map click based on the current selection mode
+function handleMapClick(e) {
     if (selectionMode === 'start') {
-        setStartNode(nodeId);
+        setStartPoint(e.latlng);
     } else if (selectionMode === 'end') {
-        setEndNode(nodeId);
+        setEndPoint(e.latlng);
     }
 }
 
-// Set the start node
-function setStartNode(nodeId) {
-    // Reset previous start node if exists
-    if (startNode) {
-        markers[startNode].setStyle({
-            fillColor: '#3388ff',
-            className: 'node-marker'
-        });
+// Set the start point
+function setStartPoint(latlng) {
+    // Remove previous start marker if exists
+    if (startMarker) {
+        map.removeLayer(startMarker);
     }
     
-    // Set new start node
-    startNode = nodeId;
-    markers[startNode].setStyle({
-        fillColor: '#4CAF50',
-        className: 'start-marker'
-    });
+    // Create new start marker
+    startMarker = L.marker(latlng, {
+        icon: L.divIcon({
+            className: 'start-marker',
+            html: '<div style="background-color: #4CAF50; width: 14px; height: 14px; border-radius: 50%; border: 2px solid white;"></div>',
+            iconSize: [18, 18],
+            iconAnchor: [9, 9]
+        })
+    }).addTo(map);
     
-    updateStatus(`Start point set to node ${nodeId}. Now select an end point.`);
+    // Find nearest street using Nominatim reverse geocoding
+    findNearestStreet(latlng, 'start');
+    
+    updateStatus('Start point set. Now select an end point.');
     selectionMode = 'end';
     resetButtonStates();
     document.getElementById('endBtn').classList.add('active');
 }
 
-// Set the end node
-function setEndNode(nodeId) {
-    // Don't allow same node as start and end
-    if (nodeId === startNode) {
-        updateStatus('Start and end points cannot be the same. Choose a different node.');
-        return;
+// Set the end point
+function setEndPoint(latlng) {
+    // Remove previous end marker if exists
+    if (endMarker) {
+        map.removeLayer(endMarker);
     }
     
-    // Reset previous end node if exists
-    if (endNode) {
-        markers[endNode].setStyle({
-            fillColor: '#3388ff',
-            className: 'node-marker'
-        });
-    }
+    // Create new end marker
+    endMarker = L.marker(latlng, {
+        icon: L.divIcon({
+            className: 'end-marker',
+            html: '<div style="background-color: #f44336; width: 14px; height: 14px; border-radius: 50%; border: 2px solid white;"></div>',
+            iconSize: [18, 18],
+            iconAnchor: [9, 9]
+        })
+    }).addTo(map);
     
-    // Set new end node
-    endNode = nodeId;
-    markers[endNode].setStyle({
-        fillColor: '#f44336',
-        className: 'end-marker'
-    });
+    // Find nearest street using Nominatim reverse geocoding
+    findNearestStreet(latlng, 'end');
     
-    updateStatus(`End point set to node ${nodeId}. Click "Find Shortest Path" to calculate.`);
+    updateStatus('End point set. Click "Find Shortest Path" to calculate the route.');
     selectionMode = 'none';
     resetButtonStates();
 }
 
-// Find the shortest path using Dijkstra's algorithm
+function findNearestStreet(latlng, pointType) {
+    const apiUrl = `https://nominatim.openstreetmap.org/reverse?lat=${latlng.lat}&lon=${latlng.lng}&format=json&addressdetails=1`;
+    
+    fetch(apiUrl)
+        .then(response => response.json())
+        .then(data => {
+            // Extract street name from response
+            let locationName = data.address.road || data.address.pedestrian || 'Unknown location';
+            
+            // Update marker with location information
+            if (pointType === 'start') {
+                startMarker.bindTooltip(`Start: ${locationName}`);
+            }
+        });
+}
+// Find the shortest path using OSRM routing service
 function findShortestPath() {
-    if (!startNode || !endNode) {
-        updateStatus('Please select both start and end points first.');
-        return;
-    }
+    // Use OSRM for real street routing
+    const osrmUrl = 'https://router.project-osrm.org/route/v1/driving/';
+    const startCoord = `${startMarker.getLatLng().lng},${startMarker.getLatLng().lat}`;
+    const endCoord = `${endMarker.getLatLng().lng},${endMarker.getLatLng().lat}`;
+    const url = `${osrmUrl}${startCoord};${endCoord}?overview=full&geometries=geojson`;
     
-    // Clear previous path if exists
-    if (polyline) {
-        map.removeLayer(polyline);
-    }
-    
-    // Run Dijkstra's algorithm
-    const result = dijkstra(graphData, startNode, endNode);
-    
-    if (result.distance === Infinity) {
-        updateStatus('No path found between the selected nodes.');
-        return;
-    }
-    
-    // Create path coordinates for the polyline
-    const pathCoordinates = result.path.map(nodeId => graphData.coordinates[nodeId]);
-    
-    // Draw the path on the map
-    polyline = L.polyline(pathCoordinates, {
-        color: '#ff4500',
-        weight: 5,
-        opacity: 0.7
-    }).addTo(map);
-    
-    // Zoom to fit the path
-    map.fitBounds(polyline.getBounds(), { padding: [50, 50] });
-    
-    // Update the info panel
-    const pathStr = result.path.join(' → ');
-    document.getElementById('distanceInfo').innerHTML = `<strong>Distance:</strong> ${result.distance} units`;
-    document.getElementById('pathInfo').innerHTML = `<strong>Path:</strong> ${pathStr}`;
-    
-    updateStatus('Shortest path found!');
+    fetch(url)
+        .then(response => response.json())
+        .then(data => {
+            // Get the route coordinates that follow actual streets
+            const route = data.routes[0];
+            const coordinates = route.geometry.coordinates.map(coord => [coord[1], coord[0]]);
+            
+            // Display route, distance and time
+            polyline = L.polyline(coordinates, {
+                color: 'blue',
+                weight: 4,
+                opacity: 0.7
+            }).addTo(map);
+            
+            const distanceKm = (route.distance / 1000).toFixed(2);
+            const durationMin = Math.round(route.duration / 60);
+            
+            document.getElementById('distanceInfo').innerHTML = `
+                <strong>Distance:</strong> ${distanceKm} km<br>
+                <strong>Estimated time:</strong> ${durationMin} minutes
+            `;
+        });
 }
 
 // Reset the application
 function resetApplication() {
-    // Clear selected nodes
-    if (startNode) {
-        markers[startNode].setStyle({
-            fillColor: '#3388ff',
-            className: 'node-marker'
-        });
-        startNode = null;
+    // Remove markers
+    if (startMarker) {
+        map.removeLayer(startMarker);
+        startMarker = null;
     }
     
-    if (endNode) {
-        markers[endNode].setStyle({
-            fillColor: '#3388ff',
-            className: 'node-marker'
-        });
-        endNode = null;
+    if (endMarker) {
+        map.removeLayer(endMarker);
+        endMarker = null;
     }
     
-    // Clear path
+    // Remove polyline
     if (polyline) {
         map.removeLayer(polyline);
         polyline = null;
+    }
+    
+    // Remove routing control if exists
+    if (routingControl) {
+        map.removeControl(routingControl);
+        routingControl = null;
     }
     
     // Reset info panel
